@@ -58,6 +58,7 @@ class LicensePlate(HubotScript):
     def lookup_car(self, message, matches):
         search = matches[0].lower()
         if len(search) > 3:
+            keywords = search.split(" ")
             csvrows = self.get_csv_rows(URL)
             mapping = self.get_mapping(csvrows[0])
             matches = []
@@ -66,14 +67,27 @@ class LicensePlate(HubotScript):
                 model = row[mapping[MODEL]]
                 color = row[mapping[COLOR]]
                 name = row[mapping[NAME]].title()
-                search_description = '{color} {make} {model} {color} {model}'.format(
+                search_description = '{color} {make} {model}'.format(
                     color=color, make=make, model=model).lower()
-                if search in search_description:
-                    description = '{name} owns a {color} {make} {model}'.format(
+                score = 0;
+                for keyword in keywords:
+                    if keyword in search_description:
+                        score++;
+                description = '{name} owns a {color} {make} {model}'.format(
                         color=color.title(), make=make.title(), model=model.title(), name=name.title())
-                    matches += [description]
+                result = {}
+                result["description"] = description
+                result["score"] = score
+                matches += [result]
             if matches:
-                return '\n'.join(matches)
+                matches.sort(key=lambda x: x["score"], reverse=True)
+                output = ""
+                for match in matches[:3]:
+                    output += match["description"] + '\n'
+                remainder = max(len(matches) - 3, 0)
+                if(remainder > 0)
+                    output += '... and {count} more'.format(remainder=remainder)
+                return output
             return "I don't know of anyone owning a {search}".format(
                 search=search.title())
 
